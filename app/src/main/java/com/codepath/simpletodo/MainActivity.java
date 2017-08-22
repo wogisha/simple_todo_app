@@ -1,5 +1,6 @@
 package com.codepath.simpletodo;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,7 +17,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
-    ArrayList<String > items;
+    public static final int REQUEST_CODE = 100;
+    public static final String ITEM_STRING = "itemString";
+    public static final String ITEM_INDEX = "itemIndex";
+    ArrayList<String> items;
     ArrayAdapter<String> itemsAdapter;
     ListView lvItems;
 
@@ -33,8 +37,22 @@ public class MainActivity extends AppCompatActivity {
         lvItems.setAdapter(itemsAdapter);
 
 
-
         setupListViewListener();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
+            String itemItem = data.getStringExtra(ITEM_STRING);
+            int itemIndex = data.getIntExtra(ITEM_INDEX, 0);
+
+            items.remove(itemIndex);
+            items.add(itemIndex, itemItem);
+
+            itemsAdapter.notifyDataSetChanged();
+
+            writeItems();
+        }
     }
 
     private void setupListViewListener() {
@@ -45,6 +63,16 @@ public class MainActivity extends AppCompatActivity {
                 itemsAdapter.notifyDataSetChanged();
                 writeItems();
                 return true;
+            }
+        });
+
+        lvItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent intent = new Intent(MainActivity.this, EditItemActivity.class);
+                intent.putExtra(ITEM_STRING, items.get(i));
+                intent.putExtra(ITEM_INDEX, i);
+                startActivityForResult(intent, REQUEST_CODE);
             }
         });
     }
@@ -58,7 +86,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private static final String TAG = "MainActivity";
-    private void readItems(){
+
+    private void readItems() {
         File fileDir = getFilesDir();
         File todoFile = new File(fileDir, "todo.txt");
 
@@ -69,12 +98,13 @@ public class MainActivity extends AppCompatActivity {
             items = new ArrayList<>();
         }
     }
-    private void writeItems(){
+
+    private void writeItems() {
         File fileDir = getFilesDir();
         File todoFile = new File(fileDir, "todo.txt");
 
         try {
-            FileUtils.writeLines(todoFile,items);
+            FileUtils.writeLines(todoFile, items);
         } catch (IOException e) {
             e.printStackTrace();
         }
